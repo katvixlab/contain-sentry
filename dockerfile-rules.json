@@ -1,0 +1,348 @@
+[
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "from",
+    "metadata": {"id": "DF001", "name": "Base image uses latest tag", "severity": "fail"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)^FROM\\s+\\S+:latest(?:\\s|$)"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "from",
+    "metadata": {"id": "DF002", "name": "Base image tag without digest", "severity": "warn"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)^FROM\\s+[^\\s@]+:[^\\s@]+(?:\\s+AS\\s+\\S+)?\\s*$"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "eof",
+    "metadata": {"id": "DF003", "name": "Final stage in multi-stage misses COPY --from", "severity": "fail"},
+    "expression": {"expr_kind": "dockerfile_constraint", "check": "missing_copy_from_in_multistage"}
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "eof",
+    "metadata": {"id": "DF004", "name": "Single-stage image contains build tooling", "severity": "warn"},
+    "expression": {"expr_kind": "dockerfile_constraint", "check": "single_stage_with_build_tools"}
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "eof",
+    "metadata": {"id": "DF005", "name": "Missing USER in final stage", "severity": "fail"},
+    "expression": {"expr_kind": "dockerfile_constraint", "check": "missing_user_final_stage"}
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "user",
+    "metadata": {"id": "DF006", "name": "USER is root or uid 0", "severity": "fail"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)^USER\\s+(root|0)(?:\\s|$)"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "user",
+    "metadata": {"id": "DF007", "name": "USER uid must be greater than 1000", "severity": "fail"},
+    "expression": {"expr_kind": "user_id_compare", "operator": "<=", "value": 1000}
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "env",
+    "metadata": {"id": "DF008", "name": "Secret-like ENV key detected", "severity": "fail"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)(PASSWORD|PASS|TOKEN|SECRET|KEY|AWS_.*KEY|PRIVATE)"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "arg",
+    "metadata": {"id": "DF009", "name": "Secret-like ARG key detected", "severity": "fail"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)(PASSWORD|PASS|TOKEN|SECRET|KEY|AWS_.*KEY|PRIVATE)"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "copy",
+    "metadata": {"id": "DF010", "name": "COPY may include secret file", "severity": "fail"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)(\\.env|id_rsa|\\.npmrc|\\.pypirc|\\.netrc|kubeconfig|\\.pem|\\.key)"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "add",
+    "metadata": {"id": "DF011", "name": "ADD may include secret file", "severity": "fail"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)(\\.env|id_rsa|\\.npmrc|\\.pypirc|\\.netrc|kubeconfig|\\.pem|\\.key)"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {"id": "DF012", "name": "curl/wget piped to shell", "severity": "fail"},
+    "expression": {
+      "expr_kind": "dsl",
+      "select": "run.script",
+      "expr": {
+        "op": "pipe",
+        "left": {"op": "call", "name": {"op": "in", "values": ["curl", "wget"]}},
+        "right": {"op": "call", "name": {"op": "in", "values": ["sh", "bash"]}}
+      }
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {"id": "DF013", "name": "curl/wget without verification", "severity": "fail"},
+    "expression": {
+      "expr_kind": "dsl",
+      "select": "run.script",
+      "expr": {
+        "op": "all",
+        "args": [
+          {"op": "exists", "where": {"op": "call", "name": {"op": "in", "values": ["curl", "wget"]}}},
+          {
+            "op": "not",
+            "arg": {
+              "op": "exists",
+              "where": {"op": "call", "name": {"op": "in", "values": ["sha256sum", "gpg", "cosign"]}}
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "add",
+    "metadata": {"id": "DF014", "name": "ADD URL without checksum", "severity": "fail"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)^ADD\\s+https?://"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "add",
+    "metadata": {"id": "DF015", "name": "Prefer COPY over ADD for local files", "severity": "warn"},
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": ["(?i)^ADD\\s+"]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {"id": "DF016", "name": "apt-get update is separate from install", "severity": "warn"},
+    "expression": {
+      "expr_kind": "dsl",
+      "select": "run.script",
+      "expr": {
+        "op": "all",
+        "args": [
+          {
+            "op": "exists",
+            "where": {
+              "op": "call",
+              "name": {"op": "eq", "value": "apt-get"},
+              "args": {"any": [{"op": "contains", "value": "update"}]}
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "exists",
+              "where": {
+                "op": "call",
+                "name": {"op": "eq", "value": "apt-get"},
+                "args": {"any": [{"op": "contains", "value": "install"}]}
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {"id": "DF017", "name": "apt upgrade detected", "severity": "warn"},
+    "expression": {
+      "expr_kind": "dsl",
+      "select": "run.script",
+      "expr": {
+        "op": "exists",
+        "where": {
+          "op": "any",
+          "args": [
+            {
+              "op": "call",
+              "name": {"op": "eq", "value": "apt-get"},
+              "args": {"any": [{"op": "contains", "value": "upgrade"}]}
+            },
+            {
+              "op": "call",
+              "name": {"op": "eq", "value": "apt"},
+              "args": {"any": [{"op": "contains", "value": "upgrade"}]}
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {"id": "DF018", "name": "apt-get install without apt lists cleanup", "severity": "warn"},
+    "expression": {
+      "expr_kind": "dsl",
+      "select": "run.script",
+      "expr": {
+        "op": "all",
+        "args": [
+          {
+            "op": "exists",
+            "where": {
+              "op": "call",
+              "name": {"op": "eq", "value": "apt-get"},
+              "args": {"any": [{"op": "contains", "value": "install"}]}
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "exists",
+              "where": {
+                "op": "call",
+                "name": {"op": "eq", "value": "rm"},
+                "args": {"any": [{"op": "contains", "value": "/var/lib/apt/lists"}]}
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {"id": "DF019", "name": "apk add without --no-cache", "severity": "warn"},
+    "expression": {
+      "expr_kind": "dsl",
+      "select": "run.script",
+      "expr": {
+        "op": "all",
+        "args": [
+          {
+            "op": "exists",
+            "where": {
+              "op": "call",
+              "name": {"op": "eq", "value": "apk"},
+              "args": {"all": [{"op": "eq", "value": "add"}]}
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "exists",
+              "where": {
+                "op": "call",
+                "name": {"op": "eq", "value": "apk"},
+                "args": {"any": [{"op": "eq", "value": "--no-cache"}]}
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {"id": "DF020", "name": "Cache mount without id", "severity": "warn"},
+    "expression": {
+      "expr_kind": "dsl",
+      "select": "run.mounts",
+      "expr": {
+        "op": "exists",
+        "where": {
+          "op": "mount",
+          "type": "cache",
+          "missing": ["id"]
+        }
+      }
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {"id": "DF021", "name": "Apt cache mount without sharing=locked", "severity": "warn"},
+    "expression": {
+      "expr_kind": "dsl",
+      "select": "run.mounts",
+      "expr": {
+        "op": "all",
+        "args": [
+          {
+            "op": "exists",
+            "where": {
+              "op": "mount",
+              "type": "cache",
+              "target": {"op": "contains", "value": "/var/lib/apt"}
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "exists",
+              "where": {
+                "op": "mount",
+                "type": "cache",
+                "target": {"op": "contains", "value": "/var/lib/apt"},
+                "sharing": {"op": "eq", "value": "locked"}
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "eof",
+    "metadata": {"id": "DF022", "name": "Missing HEALTHCHECK in final stage", "severity": "warn"},
+    "expression": {"expr_kind": "dockerfile_constraint", "check": "missing_healthcheck_final_stage"}
+  }
+]
