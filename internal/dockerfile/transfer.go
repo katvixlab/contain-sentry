@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/bonus2k/contain-sentry/cmd/containsentry/config"
+	"github.com/katvixlab/contain-sentry/cmd/containsentry/config"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"go.uber.org/zap"
 )

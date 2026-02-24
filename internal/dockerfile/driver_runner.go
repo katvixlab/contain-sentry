@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bonus2k/contain-sentry/internal/engine"
-	"github.com/bonus2k/contain-sentry/internal/entities"
+	"github.com/katvixlab/contain-sentry/internal/engine"
+	"github.com/katvixlab/contain-sentry/internal/entities"
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 )

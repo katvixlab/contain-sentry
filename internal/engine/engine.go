@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/bonus2k/contain-sentry/internal/entities"
+	"github.com/katvixlab/contain-sentry/internal/entities"
 )
 
 type Step struct {
