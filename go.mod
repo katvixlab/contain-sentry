@@ -3,7 +3,6 @@ module github.com/katvixlab/contain-sentry
 go 1.25.5
 
 require (
-	github.com/bonus2k/contain-sentry v0.0.0-20260215205037-18f27423f51a
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/moby/buildkit v0.27.1
 	go.uber.org/zap v1.27.1

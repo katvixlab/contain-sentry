@@ -59,7 +59,7 @@ ContainSentry построен как конвейер:
 ## Сборка из исходников
 
 ```bash
-git clone github.com/bonus2k/contain-sentry
+git clone github.com/katvixlab/contain-sentry
 cd contain-sentry
 go build -o containsentry ./cmd/containsentry
 ./containsentry --help

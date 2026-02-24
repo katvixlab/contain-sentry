@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bonus2k/contain-sentry/internal/entities"
+	"github.com/katvixlab/contain-sentry/internal/entities"
 )
 
 type ruleSet struct {

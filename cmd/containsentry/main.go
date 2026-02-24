@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bonus2k/contain-sentry/cmd/containsentry/config"
-	"github.com/bonus2k/contain-sentry/internal/dockerfile"
+	"github.com/katvixlab/contain-sentry/cmd/containsentry/config"
+	"github.com/katvixlab/contain-sentry/internal/dockerfile"
 	"go.uber.org/zap"
 )
 
