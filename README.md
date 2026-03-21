@@ -62,4 +62,213 @@ ContainSentry построен как конвейер:
 git clone github.com/katvixlab/contain-sentry
 cd contain-sentry
 go build -o containsentry ./cmd/containsentry
+./containsentry
+```
+
+## Поддерживаемые target
+
+ContainSentry поддерживает два домена анализа:
+
+- `dockerfile` — анализ Dockerfile и build-практик
+- `compose` — анализ Docker Compose-конфигурации
+
+Выбор домена выполняется через `TARGET`.
+
+## Ключи конфигурации
+
+Сейчас запуск настраивается через переменные окружения.
+
+| Ключ | Значение по умолчанию | Назначение |
+|---|---|---|
+| `TARGET` | `dockerfile` | Целевой домен: `dockerfile` или `compose` |
+| `DOCKERFILE_PATH` | `Dockerfile` | Путь к Dockerfile для `TARGET=dockerfile` |
+| `COMPOSE_FILES` | `compose.yaml` | Один или несколько Compose-файлов через запятую для `TARGET=compose` |
+| `RULES_PATH` | `dockerfile-rules.json` | Путь к JSON-файлу с правилами |
+| `REPORT_JSON` | - | Путь к JSON-отчёту с найденными замечаниями |
+
+Примечания:
+
+- `COMPOSE_FILES` поддерживает несколько файлов: `compose.yaml,compose.prod.yaml`
+- для Compose имеет смысл использовать отдельный rules-файл, например `compose-rules.json`
+- при `TARGET=dockerfile` ключ `COMPOSE_FILES` игнорируется
+- при `TARGET=compose` ключ `DOCKERFILE_PATH` игнорируется
+
+## Формат правил
+
+Инструмент загружает правила из JSON. Поддерживаются оба формата:
+
+- массив правил
+- объект вида `{ "rules": [...] }`
+
+Общая структура правила:
+
+```json
+{
+  "target": "compose",
+  "phase": "post",
+  "subject": "user",
+  "metadata": {
+    "id": "CP002",
+    "name": "Service runs as root",
+    "severity": "fail"
+  },
+  "expression": {
+    "expr_kind": "field",
+    "select": "service.user",
+    "expr": {
+      "op": "regex",
+      "pattern": "(?i)^(root|0)(?::.*)?$"
+    }
+  }
+}
+```
+
+Поддерживаемые `target`:
+
+- `dockerfile`
+- `compose`
+
+## Способы использования
+
+### Просмотр справки
+
+```bash
 ./containsentry --help
+```
+
+### Анализ Dockerfile
+
+```bash
+./containsentry \
+  --target dockerfile \
+  --dockerfile ./Dockerfile \
+  --rules ./dockerfile-rules.json
+```
+
+### Анализ Docker Compose
+
+```bash
+./containsentry \
+  --target compose \
+  --compose-files ./compose.yaml \
+  --rules ./compose-rules.json
+```
+
+### Анализ с сохранением JSON-отчёта
+
+```bash
+./containsentry \
+  --target compose \
+  --compose-files ./compose.yaml \
+  --rules ./compose-rules.json \
+  --report-json ./report.json
+```
+
+### Анализ Compose с override-файлами
+
+```bash
+./containsentry \
+  --target compose \
+  --compose-files ./compose.yaml,./compose.prod.yaml \
+  --rules ./compose-rules.json
+```
+
+### Запуск без предварительной сборки
+
+```bash
+go run ./cmd/containsentry --help
+```
+
+```bash
+go run ./cmd/containsentry \
+  --target compose \
+  --compose-files ./compose.yaml \
+  --rules ./compose-rules.json
+```
+
+## Compose-правила
+
+Для `compose` анализируется нормализованная конфигурация проекта, а не сырой YAML. Базовый доменный контекст включает:
+
+- имя проекта и список файлов
+- `services`
+- top-level `secrets`
+- `networks`
+- `volumes`
+- `profiles`
+
+Поддерживаемые `subject` для `compose`:
+
+- `service`
+- `build`
+- `image`
+- `user`
+- `read_only`
+- `privileged`
+- `cap_drop`
+- `security_opt`
+- `network_mode`
+- `pid`
+- `ipc`
+- `devices`
+- `ports`
+- `volumes`
+- `environment`
+- `secrets`
+- `healthcheck`
+- `depends_on`
+- `restart`
+- `profiles`
+- `eof`
+
+Для Compose используется field-based DSL:
+
+- `expr_kind: "field"`
+- `select` — путь к данным, например `service.user` или `service.healthcheck`
+- `expr` — булево выражение
+
+Поддерживаемые операции:
+
+- `exists`
+- `eq`
+- `ne`
+- `contains`
+- `in`
+- `regex`
+- `all`
+- `any`
+- `not`
+
+## JSON Report
+
+ContainSentry умеет сохранять результат анализа в JSON-файл.
+
+Вывод отчёта включается через:
+
+- CLI-флаг `--report-json ./report.json`
+- переменную окружения `REPORT_JSON=./report.json`
+
+Структура отчёта включает:
+
+- `findings`
+- `summary`
+
+Для каждого finding в отчёт попадают:
+
+- `id`
+- `name`
+- `severity`
+- `description`
+- `mitigation`
+- `reference`
+- `code_sample`
+- `location`
+- `target`
+- `subject`
+
+## Тестирование
+
+```bash
+go test ./...
+go build ./...
+```

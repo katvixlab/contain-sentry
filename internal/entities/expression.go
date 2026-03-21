@@ -63,6 +63,12 @@ func UnmarshalExpression(raw json.RawMessage) (Expression, error) {
 			return nil, err
 		}
 		return &expr, nil
+	case "field":
+		var expr ExpressionField
+		if err := json.Unmarshal(raw, &expr); err != nil {
+			return nil, err
+		}
+		return &expr, nil
 	case "":
 		return nil, nil
 	default:

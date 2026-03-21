@@ -3,346 +3,665 @@
     "target": "dockerfile",
     "phase": "post",
     "subject": "from",
-    "metadata": {"id": "DF001", "name": "Base image uses latest tag", "severity": "fail"},
+    "metadata": {
+      "id": "DF001",
+      "name": "Base image uses latest tag",
+      "description": "Mutable latest tags reduce image reproducibility and make supply-chain review harder.",
+      "severity": "fail",
+      "mitigation": "Pin the base image to an explicit version and preferably to an immutable digest.",
+      "reference": "Docker image best practices; OCI image immutability and supply chain guidance."
+    },
     "expression": {
       "expr_kind": "regex",
-      "expressions": ["(?i)^FROM\\s+\\S+:latest(?:\\s|$)"]
+      "expressions": [
+        "(?i)^FROM\\s+\\S+:latest(?:\\s|$)"
+      ]
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "from",
-    "metadata": {"id": "DF002", "name": "Base image tag without digest", "severity": "warn"},
+    "metadata": {
+      "id": "DF002",
+      "name": "Base image tag without digest",
+      "description": "Version tags can be retagged and do not fully guarantee the exact base image content.",
+      "severity": "warn",
+      "mitigation": "Pin the base image by digest in addition to the version tag.",
+      "reference": "Dockerfile best practices for image pinning and reproducible builds."
+    },
     "expression": {
       "expr_kind": "regex",
-      "expressions": ["(?i)^FROM\\s+[^\\s@]+:[^\\s@]+(?:\\s+AS\\s+\\S+)?\\s*$"]
+      "expressions": [
+        "(?i)^FROM\\s+[^\\s@]+:[^\\s@]+(?:\\s+AS\\s+\\S+)?\\s*$"
+      ]
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "eof",
-    "metadata": {"id": "DF003", "name": "Final stage in multi-stage misses COPY --from", "severity": "fail"},
-    "expression": {"expr_kind": "dockerfile_constraint", "check": "missing_copy_from_in_multistage"}
-  },
-  {
-    "target": "dockerfile",
-    "phase": "post",
-    "subject": "eof",
-    "metadata": {"id": "DF004", "name": "Single-stage image contains build tooling", "severity": "warn"},
-    "expression": {"expr_kind": "dockerfile_constraint", "check": "single_stage_with_build_tools"}
-  },
-  {
-    "target": "dockerfile",
-    "phase": "post",
-    "subject": "eof",
-    "metadata": {"id": "DF005", "name": "Missing USER in final stage", "severity": "fail"},
-    "expression": {"expr_kind": "dockerfile_constraint", "check": "missing_user_final_stage"}
-  },
-  {
-    "target": "dockerfile",
-    "phase": "post",
-    "subject": "user",
-    "metadata": {"id": "DF006", "name": "USER is root or uid 0", "severity": "fail"},
+    "metadata": {
+      "id": "DF003",
+      "name": "Final stage in multi-stage misses COPY --from",
+      "description": "A multi-stage build without artifact transfer to the final stage often indicates an incorrect or incomplete packaging flow.",
+      "severity": "fail",
+      "mitigation": "Copy only the required build artifacts from the builder stage into the final runtime stage.",
+      "reference": "Docker multi-stage build guidance for minimal and reproducible runtime images."
+    },
     "expression": {
-      "expr_kind": "regex",
-      "expressions": ["(?i)^USER\\s+(root|0)(?:\\s|$)"]
+      "check": "missing_copy_from_in_multistage",
+      "expr_kind": "dockerfile_constraint"
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "eof",
+    "metadata": {
+      "id": "DF004",
+      "name": "Single-stage image contains build tooling",
+      "description": "Keeping compilers or build toolchains in the runtime image increases attack surface and image size.",
+      "severity": "warn",
+      "mitigation": "Use a dedicated builder stage and ship a minimal final runtime image.",
+      "reference": "Docker multi-stage build guidance; container hardening guidance for minimal runtime images."
+    },
+    "expression": {
+      "check": "single_stage_with_build_tools",
+      "expr_kind": "dockerfile_constraint"
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "eof",
+    "metadata": {
+      "id": "DF005",
+      "name": "Missing USER in final stage",
+      "description": "Containers that do not set USER in the final stage usually run as root by default.",
+      "severity": "fail",
+      "mitigation": "Create a dedicated non-root user and set USER in the final stage.",
+      "reference": "Least-privilege container runtime guidance; CIS Docker Benchmark recommendations."
+    },
+    "expression": {
+      "check": "missing_user_final_stage",
+      "expr_kind": "dockerfile_constraint"
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "user",
-    "metadata": {"id": "DF007", "name": "USER uid must be greater than 1000", "severity": "fail"},
-    "expression": {"expr_kind": "user_id_compare", "operator": "<=", "value": 1000}
+    "metadata": {
+      "id": "DF006",
+      "name": "USER is root or uid 0",
+      "description": "Running the container process as root increases the impact of container escape and application compromise scenarios.",
+      "severity": "fail",
+      "mitigation": "Run the application under a non-root user with the minimal required permissions.",
+      "reference": "Least-privilege guidance for containers; CIS Docker Benchmark user recommendations."
+    },
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": [
+        "(?i)^USER\\s+(root|0)(?:\\s|$)"
+      ]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "user",
+    "metadata": {
+      "id": "DF007",
+      "name": "USER uid must be greater than 1000",
+      "description": "Low UIDs are often reserved for system identities and may conflict with host or base image accounts.",
+      "severity": "fail",
+      "mitigation": "Use an application-specific non-root user with a dedicated UID above the system range.",
+      "reference": "Container hardening practices for dedicated non-root runtime users."
+    },
+    "expression": {
+      "expr_kind": "user_id_compare",
+      "operator": "\u003c=",
+      "value": 1000
+    }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "env",
-    "metadata": {"id": "DF008", "name": "Secret-like ENV key detected", "severity": "fail"},
+    "metadata": {
+      "id": "DF008",
+      "name": "Secret-like ENV key detected",
+      "description": "Embedding secret-like values in image environment metadata risks disclosure through image inspection and downstream reuse.",
+      "severity": "fail",
+      "mitigation": "Remove secrets from ENV and provide them at runtime through dedicated secret management mechanisms.",
+      "reference": "Docker secrets guidance; NIST container security guidance for secret handling."
+    },
     "expression": {
       "expr_kind": "regex",
-      "expressions": ["(?i)(PASSWORD|PASS|TOKEN|SECRET|KEY|AWS_.*KEY|PRIVATE)"]
+      "expressions": [
+        "(?i)(PASSWORD|PASS|TOKEN|SECRET|KEY|AWS_.*KEY|PRIVATE)"
+      ]
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "arg",
-    "metadata": {"id": "DF009", "name": "Secret-like ARG key detected", "severity": "fail"},
+    "metadata": {
+      "id": "DF009",
+      "name": "Secret-like ARG key detected",
+      "description": "Build arguments can leak into build history, logs, or cache metadata when used for sensitive data.",
+      "severity": "fail",
+      "mitigation": "Do not pass secrets through ARG; use secret mounts or external secret delivery instead.",
+      "reference": "BuildKit secret handling guidance; secure build pipeline practices."
+    },
     "expression": {
       "expr_kind": "regex",
-      "expressions": ["(?i)(PASSWORD|PASS|TOKEN|SECRET|KEY|AWS_.*KEY|PRIVATE)"]
+      "expressions": [
+        "(?i)(PASSWORD|PASS|TOKEN|SECRET|KEY|AWS_.*KEY|PRIVATE)"
+      ]
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "copy",
-    "metadata": {"id": "DF010", "name": "COPY may include secret file", "severity": "fail"},
+    "metadata": {
+      "id": "DF010",
+      "name": "COPY may include secret file",
+      "description": "Copying secret material into an image can expose credentials to every consumer of the built artifact.",
+      "severity": "fail",
+      "mitigation": "Exclude secret files from the build context and inject credentials only at runtime or build time through secret mounts.",
+      "reference": "Docker build context hygiene and secret management best practices."
+    },
     "expression": {
       "expr_kind": "regex",
-      "expressions": ["(?i)(\\.env|id_rsa|\\.npmrc|\\.pypirc|\\.netrc|kubeconfig|\\.pem|\\.key)"]
+      "expressions": [
+        "(?i)(\\.env|id_rsa|\\.npmrc|\\.pypirc|\\.netrc|kubeconfig|\\.pem|\\.key)"
+      ]
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "add",
-    "metadata": {"id": "DF011", "name": "ADD may include secret file", "severity": "fail"},
+    "metadata": {
+      "id": "DF011",
+      "name": "ADD may include secret file",
+      "description": "Adding secret material into an image permanently embeds it in the resulting layers.",
+      "severity": "fail",
+      "mitigation": "Keep secret files out of the image and use dedicated secret injection mechanisms.",
+      "reference": "Docker image hardening and secret management guidance."
+    },
     "expression": {
       "expr_kind": "regex",
-      "expressions": ["(?i)(\\.env|id_rsa|\\.npmrc|\\.pypirc|\\.netrc|kubeconfig|\\.pem|\\.key)"]
+      "expressions": [
+        "(?i)(\\.env|id_rsa|\\.npmrc|\\.pypirc|\\.netrc|kubeconfig|\\.pem|\\.key)"
+      ]
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "run",
-    "metadata": {"id": "DF012", "name": "curl/wget piped to shell", "severity": "fail"},
+    "metadata": {
+      "id": "DF012",
+      "name": "curl/wget piped to shell",
+      "description": "Streaming remote content directly into a shell bypasses integrity verification and makes execution auditing difficult.",
+      "severity": "fail",
+      "mitigation": "Download the artifact separately, verify checksum or signature, and only then execute it.",
+      "reference": "Secure software delivery and artifact verification guidance; supply-chain hardening practices."
+    },
     "expression": {
-      "expr_kind": "dsl",
-      "select": "run.script",
       "expr": {
+        "left": {
+          "name": {
+            "op": "in",
+            "values": [
+              "curl",
+              "wget"
+            ]
+          },
+          "op": "call"
+        },
         "op": "pipe",
-        "left": {"op": "call", "name": {"op": "in", "values": ["curl", "wget"]}},
-        "right": {"op": "call", "name": {"op": "in", "values": ["sh", "bash"]}}
-      }
+        "right": {
+          "name": {
+            "op": "in",
+            "values": [
+              "sh",
+              "bash"
+            ]
+          },
+          "op": "call"
+        }
+      },
+      "expr_kind": "dsl",
+      "select": "run.script"
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "run",
-    "metadata": {"id": "DF013", "name": "curl/wget without verification", "severity": "fail"},
+    "metadata": {
+      "id": "DF013",
+      "name": "curl/wget without verification",
+      "description": "Downloaded artifacts that are not verified before use can be replaced or tampered with in transit or at source.",
+      "severity": "fail",
+      "mitigation": "Verify checksums or signatures for downloaded artifacts before executing or unpacking them.",
+      "reference": "Artifact integrity verification guidance; secure software supply-chain practices."
+    },
     "expression": {
-      "expr_kind": "dsl",
-      "select": "run.script",
       "expr": {
-        "op": "all",
-        "args": [
-          {"op": "exists", "where": {"op": "call", "name": {"op": "in", "values": ["curl", "wget"]}}},
-          {
-            "op": "not",
-            "arg": {
-              "op": "exists",
-              "where": {"op": "call", "name": {"op": "in", "values": ["sha256sum", "gpg", "cosign"]}}
-            }
-          }
-        ]
-      }
-    }
-  },
-  {
-    "target": "dockerfile",
-    "phase": "post",
-    "subject": "add",
-    "metadata": {"id": "DF014", "name": "ADD URL without checksum", "severity": "fail"},
-    "expression": {
-      "expr_kind": "regex",
-      "expressions": ["(?i)^ADD\\s+https?://"]
-    }
-  },
-  {
-    "target": "dockerfile",
-    "phase": "post",
-    "subject": "add",
-    "metadata": {"id": "DF015", "name": "Prefer COPY over ADD for local files", "severity": "warn"},
-    "expression": {
-      "expr_kind": "regex",
-      "expressions": ["(?i)^ADD\\s+"]
-    }
-  },
-  {
-    "target": "dockerfile",
-    "phase": "post",
-    "subject": "run",
-    "metadata": {"id": "DF016", "name": "apt-get update is separate from install", "severity": "warn"},
-    "expression": {
-      "expr_kind": "dsl",
-      "select": "run.script",
-      "expr": {
-        "op": "all",
         "args": [
           {
             "op": "exists",
             "where": {
-              "op": "call",
-              "name": {"op": "eq", "value": "apt-get"},
-              "args": {"any": [{"op": "contains", "value": "update"}]}
+              "name": {
+                "op": "in",
+                "values": [
+                  "curl",
+                  "wget"
+                ]
+              },
+              "op": "call"
             }
           },
           {
-            "op": "not",
             "arg": {
               "op": "exists",
               "where": {
-                "op": "call",
-                "name": {"op": "eq", "value": "apt-get"},
-                "args": {"any": [{"op": "contains", "value": "install"}]}
+                "name": {
+                  "op": "in",
+                  "values": [
+                    "sha256sum",
+                    "gpg",
+                    "cosign"
+                  ]
+                },
+                "op": "call"
               }
-            }
+            },
+            "op": "not"
           }
-        ]
-      }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "dsl",
+      "select": "run.script"
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "add",
+    "metadata": {
+      "id": "DF014",
+      "name": "ADD URL without checksum",
+      "description": "Using ADD with a remote URL fetches external content without an explicit integrity verification step.",
+      "severity": "fail",
+      "mitigation": "Download remote artifacts explicitly and verify their checksum or signature before use.",
+      "reference": "Dockerfile ADD semantics; secure artifact retrieval guidance."
+    },
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": [
+        "(?i)^ADD\\s+https?://"
+      ]
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "add",
+    "metadata": {
+      "id": "DF015",
+      "name": "Prefer COPY over ADD for local files",
+      "description": "ADD has broader semantics than COPY and can introduce unexpected behavior for local file transfers.",
+      "severity": "warn",
+      "mitigation": "Use COPY for local files and reserve ADD only for cases that require its special behavior.",
+      "reference": "Dockerfile best practices recommending COPY for predictable file inclusion."
+    },
+    "expression": {
+      "expr_kind": "regex",
+      "expressions": [
+        "(?i)^ADD\\s+"
+      ]
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "run",
-    "metadata": {"id": "DF017", "name": "apt upgrade detected", "severity": "warn"},
+    "metadata": {
+      "id": "DF016",
+      "name": "apt-get update is separate from install",
+      "description": "Separating apt metadata refresh from package installation can produce stale cache use and non-reproducible builds.",
+      "severity": "warn",
+      "mitigation": "Combine apt-get update and apt-get install in the same RUN step.",
+      "reference": "Dockerfile package manager best practices for Debian-based images."
+    },
     "expression": {
+      "expr": {
+        "args": [
+          {
+            "op": "exists",
+            "where": {
+              "args": {
+                "any": [
+                  {
+                    "op": "contains",
+                    "value": "update"
+                  }
+                ]
+              },
+              "name": {
+                "op": "eq",
+                "value": "apt-get"
+              },
+              "op": "call"
+            }
+          },
+          {
+            "arg": {
+              "op": "exists",
+              "where": {
+                "args": {
+                  "any": [
+                    {
+                      "op": "contains",
+                      "value": "install"
+                    }
+                  ]
+                },
+                "name": {
+                  "op": "eq",
+                  "value": "apt-get"
+                },
+                "op": "call"
+              }
+            },
+            "op": "not"
+          }
+        ],
+        "op": "all"
+      },
       "expr_kind": "dsl",
-      "select": "run.script",
+      "select": "run.script"
+    }
+  },
+  {
+    "target": "dockerfile",
+    "phase": "post",
+    "subject": "run",
+    "metadata": {
+      "id": "DF017",
+      "name": "apt upgrade detected",
+      "description": "Full distribution upgrades inside an image can pull uncontrolled package changes and reduce build determinism.",
+      "severity": "warn",
+      "mitigation": "Install only the required packages and pin versions where appropriate instead of performing broad upgrades.",
+      "reference": "Container image reproducibility guidance; package management best practices."
+    },
+    "expression": {
       "expr": {
         "op": "exists",
         "where": {
-          "op": "any",
           "args": [
             {
-              "op": "call",
-              "name": {"op": "eq", "value": "apt-get"},
-              "args": {"any": [{"op": "contains", "value": "upgrade"}]}
+              "args": {
+                "any": [
+                  {
+                    "op": "contains",
+                    "value": "upgrade"
+                  }
+                ]
+              },
+              "name": {
+                "op": "eq",
+                "value": "apt-get"
+              },
+              "op": "call"
             },
             {
-              "op": "call",
-              "name": {"op": "eq", "value": "apt"},
-              "args": {"any": [{"op": "contains", "value": "upgrade"}]}
+              "args": {
+                "any": [
+                  {
+                    "op": "contains",
+                    "value": "upgrade"
+                  }
+                ]
+              },
+              "name": {
+                "op": "eq",
+                "value": "apt"
+              },
+              "op": "call"
             }
-          ]
+          ],
+          "op": "any"
         }
-      }
+      },
+      "expr_kind": "dsl",
+      "select": "run.script"
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "run",
-    "metadata": {"id": "DF018", "name": "apt-get install without apt lists cleanup", "severity": "warn"},
+    "metadata": {
+      "id": "DF018",
+      "name": "apt-get install without apt lists cleanup",
+      "description": "Leaving apt package metadata in the image increases image size and retains unnecessary package-management state.",
+      "severity": "warn",
+      "mitigation": "Remove apt lists after installation in the same RUN step.",
+      "reference": "Dockerfile best practices for minimizing image layers and package manager artifacts."
+    },
     "expression": {
-      "expr_kind": "dsl",
-      "select": "run.script",
       "expr": {
-        "op": "all",
         "args": [
           {
             "op": "exists",
             "where": {
-              "op": "call",
-              "name": {"op": "eq", "value": "apt-get"},
-              "args": {"any": [{"op": "contains", "value": "install"}]}
+              "args": {
+                "any": [
+                  {
+                    "op": "contains",
+                    "value": "install"
+                  }
+                ]
+              },
+              "name": {
+                "op": "eq",
+                "value": "apt-get"
+              },
+              "op": "call"
             }
           },
           {
-            "op": "not",
             "arg": {
               "op": "exists",
               "where": {
-                "op": "call",
-                "name": {"op": "eq", "value": "rm"},
-                "args": {"any": [{"op": "contains", "value": "/var/lib/apt/lists"}]}
+                "args": {
+                  "any": [
+                    {
+                      "op": "contains",
+                      "value": "/var/lib/apt/lists"
+                    }
+                  ]
+                },
+                "name": {
+                  "op": "eq",
+                  "value": "rm"
+                },
+                "op": "call"
               }
-            }
+            },
+            "op": "not"
           }
-        ]
-      }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "dsl",
+      "select": "run.script"
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "run",
-    "metadata": {"id": "DF019", "name": "apk add without --no-cache", "severity": "warn"},
+    "metadata": {
+      "id": "DF019",
+      "name": "apk add without --no-cache",
+      "description": "Installing packages without --no-cache leaves package index data in the image unnecessarily.",
+      "severity": "warn",
+      "mitigation": "Use apk add --no-cache or otherwise remove cached package metadata in the same layer.",
+      "reference": "Alpine package manager guidance for compact container images."
+    },
     "expression": {
-      "expr_kind": "dsl",
-      "select": "run.script",
       "expr": {
-        "op": "all",
         "args": [
           {
             "op": "exists",
             "where": {
-              "op": "call",
-              "name": {"op": "eq", "value": "apk"},
-              "args": {"all": [{"op": "eq", "value": "add"}]}
+              "args": {
+                "all": [
+                  {
+                    "op": "eq",
+                    "value": "add"
+                  }
+                ]
+              },
+              "name": {
+                "op": "eq",
+                "value": "apk"
+              },
+              "op": "call"
             }
           },
           {
-            "op": "not",
             "arg": {
               "op": "exists",
               "where": {
-                "op": "call",
-                "name": {"op": "eq", "value": "apk"},
-                "args": {"any": [{"op": "eq", "value": "--no-cache"}]}
+                "args": {
+                  "any": [
+                    {
+                      "op": "eq",
+                      "value": "--no-cache"
+                    }
+                  ]
+                },
+                "name": {
+                  "op": "eq",
+                  "value": "apk"
+                },
+                "op": "call"
               }
-            }
+            },
+            "op": "not"
           }
-        ]
-      }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "dsl",
+      "select": "run.script"
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "run",
-    "metadata": {"id": "DF020", "name": "Cache mount without id", "severity": "warn"},
+    "metadata": {
+      "id": "DF020",
+      "name": "Cache mount without id",
+      "description": "Unnamed cache mounts are harder to manage consistently across builds and builders.",
+      "severity": "warn",
+      "mitigation": "Assign an explicit id to cache mounts to make cache usage deterministic and maintainable.",
+      "reference": "BuildKit cache mount guidance."
+    },
     "expression": {
-      "expr_kind": "dsl",
-      "select": "run.mounts",
       "expr": {
         "op": "exists",
         "where": {
+          "missing": [
+            "id"
+          ],
           "op": "mount",
-          "type": "cache",
-          "missing": ["id"]
+          "type": "cache"
         }
-      }
+      },
+      "expr_kind": "dsl",
+      "select": "run.mounts"
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "run",
-    "metadata": {"id": "DF021", "name": "Apt cache mount without sharing=locked", "severity": "warn"},
+    "metadata": {
+      "id": "DF021",
+      "name": "Apt cache mount without sharing=locked",
+      "description": "Shared apt cache mounts without locking can cause cache corruption or inconsistent concurrent package operations.",
+      "severity": "warn",
+      "mitigation": "Use sharing=locked for apt-related cache mounts.",
+      "reference": "BuildKit cache mount recommendations for apt workloads."
+    },
     "expression": {
-      "expr_kind": "dsl",
-      "select": "run.mounts",
       "expr": {
-        "op": "all",
         "args": [
           {
             "op": "exists",
             "where": {
               "op": "mount",
-              "type": "cache",
-              "target": {"op": "contains", "value": "/var/lib/apt"}
+              "target": {
+                "op": "contains",
+                "value": "/var/lib/apt"
+              },
+              "type": "cache"
             }
           },
           {
-            "op": "not",
             "arg": {
               "op": "exists",
               "where": {
                 "op": "mount",
-                "type": "cache",
-                "target": {"op": "contains", "value": "/var/lib/apt"},
-                "sharing": {"op": "eq", "value": "locked"}
+                "sharing": {
+                  "op": "eq",
+                  "value": "locked"
+                },
+                "target": {
+                  "op": "contains",
+                  "value": "/var/lib/apt"
+                },
+                "type": "cache"
               }
-            }
+            },
+            "op": "not"
           }
-        ]
-      }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "dsl",
+      "select": "run.mounts"
     }
   },
   {
     "target": "dockerfile",
     "phase": "post",
     "subject": "eof",
-    "metadata": {"id": "DF022", "name": "Missing HEALTHCHECK in final stage", "severity": "warn"},
-    "expression": {"expr_kind": "dockerfile_constraint", "check": "missing_healthcheck_final_stage"}
+    "metadata": {
+      "id": "DF022",
+      "name": "Missing HEALTHCHECK in final stage",
+      "description": "Without a HEALTHCHECK, orchestrators and operators have less visibility into runtime liveness and readiness issues.",
+      "severity": "warn",
+      "mitigation": "Define a meaningful HEALTHCHECK in the final runtime stage.",
+      "reference": "Docker HEALTHCHECK documentation and container operability guidance."
+    },
+    "expression": {
+      "check": "missing_healthcheck_final_stage",
+      "expr_kind": "dockerfile_constraint"
+    }
   }
 ]

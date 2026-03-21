@@ -1,0 +1,831 @@
+[
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP001",
+      "name": "Service is missing user",
+      "description": "A Compose service without an explicit user commonly runs as root inside the container.",
+      "severity": "fail",
+      "mitigation": "Set a dedicated non-root user for the service container.",
+      "reference": "Docker Compose least-privilege guidance; CIS Docker Benchmark recommendations."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "exists"
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.user"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "user",
+    "metadata": {
+      "id": "CP002",
+      "name": "Service runs as root",
+      "description": "Running a service container as root increases the blast radius of service compromise and container breakout scenarios.",
+      "severity": "fail",
+      "mitigation": "Configure the service to run as a dedicated non-root user.",
+      "reference": "Container least-privilege guidance; NIST container security recommendations."
+    },
+    "expression": {
+      "expr": {
+        "op": "regex",
+        "pattern": "(?i)^(root|0)(?::.*)?$"
+      },
+      "expr_kind": "field",
+      "select": "service.user"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "privileged",
+    "metadata": {
+      "id": "CP003",
+      "name": "Privileged service enabled",
+      "description": "Privileged containers effectively disable most runtime isolation controls and expose host-level attack paths.",
+      "severity": "fail",
+      "mitigation": "Disable privileged mode and grant only the minimal required permissions or capabilities.",
+      "reference": "Docker and Compose least-privilege guidance; CIS Docker Benchmark privileged container controls."
+    },
+    "expression": {
+      "expr": {
+        "op": "eq",
+        "value": true
+      },
+      "expr_kind": "field",
+      "select": "service.privileged"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP004",
+      "name": "read_only is not enabled",
+      "description": "Writable root filesystems increase persistence and tampering opportunities inside the running container.",
+      "severity": "warn",
+      "mitigation": "Enable read_only and mount only the minimal writable paths required by the service.",
+      "reference": "Container hardening guidance for immutable runtime filesystems."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "eq",
+            "value": true
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.read_only"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "network_mode",
+    "metadata": {
+      "id": "CP005",
+      "name": "Service uses host network mode",
+      "description": "Host networking removes network namespace isolation and can expose host interfaces and services directly.",
+      "severity": "fail",
+      "mitigation": "Use isolated user-defined networks and publish only the required ports explicitly.",
+      "reference": "Docker networking isolation guidance; CIS Docker Benchmark network namespace recommendations."
+    },
+    "expression": {
+      "expr": {
+        "op": "eq",
+        "value": "host"
+      },
+      "expr_kind": "field",
+      "select": "service.network_mode"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "pid",
+    "metadata": {
+      "id": "CP006",
+      "name": "Service shares host PID namespace",
+      "description": "Sharing the host PID namespace exposes host process visibility and increases the impact of compromise.",
+      "severity": "fail",
+      "mitigation": "Run the service in its own PID namespace unless a documented operational need requires otherwise.",
+      "reference": "Docker runtime isolation guidance for namespace separation."
+    },
+    "expression": {
+      "expr": {
+        "op": "eq",
+        "value": "host"
+      },
+      "expr_kind": "field",
+      "select": "service.pid"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "ipc",
+    "metadata": {
+      "id": "CP007",
+      "name": "Service shares host IPC namespace",
+      "description": "Sharing IPC with the host weakens isolation and can expose inter-process communication primitives.",
+      "severity": "fail",
+      "mitigation": "Keep the service in an isolated IPC namespace.",
+      "reference": "Docker runtime isolation guidance for IPC namespace separation."
+    },
+    "expression": {
+      "expr": {
+        "op": "eq",
+        "value": "host"
+      },
+      "expr_kind": "field",
+      "select": "service.ipc"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP008",
+      "name": "cap_drop does not include ALL",
+      "description": "Services that do not drop broad capability sets often retain more kernel privileges than necessary.",
+      "severity": "fail",
+      "mitigation": "Drop all capabilities by default and add back only narrowly required permissions.",
+      "reference": "Docker capability hardening guidance; least-privilege container runtime practices."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "contains",
+            "value": "ALL"
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.cap_drop"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP009",
+      "name": "security_opt misses no-new-privileges",
+      "description": "Without no-new-privileges, child processes may still gain additional privileges through setuid or similar mechanisms.",
+      "severity": "fail",
+      "mitigation": "Set security_opt: [\"no-new-privileges:true\"] for the service.",
+      "reference": "Docker security options guidance; container privilege escalation hardening practices."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "contains",
+            "value": "no-new-privileges:true"
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.security_opt"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "security_opt",
+    "metadata": {
+      "id": "CP010",
+      "name": "Insecure security_opt detected",
+      "description": "Options such as unconfined or disabled labels weaken or bypass important runtime confinement controls.",
+      "severity": "fail",
+      "mitigation": "Remove insecure security_opt values and keep mandatory access control profiles enabled.",
+      "reference": "Docker security options documentation; MAC/LSM container hardening guidance."
+    },
+    "expression": {
+      "expr": {
+        "op": "regex",
+        "pattern": "(?i)(unconfined|label:disable)"
+      },
+      "expr_kind": "field",
+      "select": "service.security_opt"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "devices",
+    "metadata": {
+      "id": "CP011",
+      "name": "Service maps host devices",
+      "description": "Direct host device access broadens the service attack surface and may expose sensitive hardware interfaces.",
+      "severity": "fail",
+      "mitigation": "Remove host device mappings or isolate the workload onto a dedicated trusted runtime boundary.",
+      "reference": "Docker device mapping guidance and runtime least-privilege recommendations."
+    },
+    "expression": {
+      "expr": {
+        "op": "exists"
+      },
+      "expr_kind": "field",
+      "select": "service.devices"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "environment",
+    "metadata": {
+      "id": "CP012",
+      "name": "Secret-like data in environment",
+      "description": "Secrets in environment variables are easily exposed through process inspection, logs, or diagnostics.",
+      "severity": "fail",
+      "mitigation": "Move sensitive values to dedicated Compose secrets or another secure secret delivery mechanism.",
+      "reference": "Docker Compose secrets guidance; NIST container secret management recommendations."
+    },
+    "expression": {
+      "expr": {
+        "op": "regex",
+        "pattern": "(?i)(password|passwd|token|secret|api[_-]?key|private[_-]?key)"
+      },
+      "expr_kind": "field",
+      "select": "service.environment"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP013",
+      "name": "Missing healthcheck",
+      "description": "Services without a healthcheck are harder to monitor and recover automatically when degraded.",
+      "severity": "warn",
+      "mitigation": "Add a meaningful healthcheck that reflects service readiness or liveness.",
+      "reference": "Docker Compose healthcheck documentation and operational resilience guidance."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "exists"
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.healthcheck"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP014",
+      "name": "depends_on lacks service_healthy condition",
+      "description": "Starting dependent services without health-based conditions can create fragile startup ordering and runtime errors.",
+      "severity": "warn",
+      "mitigation": "Use health-based dependency conditions where service readiness matters.",
+      "reference": "Docker Compose depends_on and healthcheck coordination guidance."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "args": [
+            {
+              "op": "exists"
+            },
+            {
+              "arg": {
+                "op": "regex",
+                "pattern": "service_healthy"
+              },
+              "op": "not"
+            }
+          ],
+          "op": "all"
+        },
+        "op": "field",
+        "select": "service.depends_on"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP015",
+      "name": "Missing restart policy",
+      "description": "Services without restart behavior configured may remain down after transient failures or host restarts.",
+      "severity": "warn",
+      "mitigation": "Set an appropriate restart policy for the service operational model.",
+      "reference": "Docker Compose restart policy guidance for resilient service operation."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "exists"
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.restart"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "restart",
+    "metadata": {
+      "id": "CP016",
+      "name": "Unsafe restart policy",
+      "description": "A no restart policy leaves the service unavailable after failures unless manually recovered.",
+      "severity": "warn",
+      "mitigation": "Use a restart policy such as unless-stopped or on-failure where appropriate.",
+      "reference": "Docker Compose operational resiliency guidance for restart handling."
+    },
+    "expression": {
+      "expr": {
+        "op": "eq",
+        "value": "no"
+      },
+      "expr_kind": "field",
+      "select": "service.restart"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "userns_mode",
+    "metadata": {
+      "id": "CP017",
+      "name": "Insecure user namespace mode",
+      "description": "Host-like or shared user namespace modes reduce user isolation and can weaken runtime separation.",
+      "severity": "fail",
+      "mitigation": "Avoid host or shared user namespace modes unless there is a documented and justified need.",
+      "reference": "Docker user namespace remapping guidance and container isolation best practices."
+    },
+    "expression": {
+      "expr": {
+        "op": "regex",
+        "pattern": "(?i)^(host|container:|service:)"
+      },
+      "expr_kind": "field",
+      "select": "service.userns_mode"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "cap_add",
+    "metadata": {
+      "id": "CP018",
+      "name": "Capability additions are enabled",
+      "description": "Adding Linux capabilities increases kernel-level privileges beyond the safer default profile.",
+      "severity": "warn",
+      "mitigation": "Remove cap_add entries unless each added capability is explicitly justified.",
+      "reference": "Docker capability model guidance; least-privilege container runtime practices."
+    },
+    "expression": {
+      "expr": {
+        "op": "exists"
+      },
+      "expr_kind": "field",
+      "select": "service.cap_add"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "cap_add",
+    "metadata": {
+      "id": "CP019",
+      "name": "Dangerous capability added",
+      "description": "Capabilities such as SYS_ADMIN, NET_ADMIN, and SYS_PTRACE provide especially broad or sensitive host interaction powers.",
+      "severity": "fail",
+      "mitigation": "Remove dangerous capability additions and redesign the service to operate with a narrower privilege set.",
+      "reference": "Docker capability hardening guidance; CIS Docker Benchmark capability recommendations."
+    },
+    "expression": {
+      "expr": {
+        "op": "regex",
+        "pattern": "(?i)(SYS_ADMIN|NET_ADMIN|SYS_PTRACE)"
+      },
+      "expr_kind": "field",
+      "select": "service.cap_add"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "volumes",
+    "metadata": {
+      "id": "CP020",
+      "name": "Docker socket is mounted from host",
+      "description": "Mounting docker.sock exposes the Docker daemon API and effectively grants host-level control to the container.",
+      "severity": "fail",
+      "mitigation": "Remove the docker.sock mount or separate build/orchestration duties from the application container.",
+      "reference": "Docker daemon attack surface guidance; container breakout risk documentation."
+    },
+    "expression": {
+      "expr": {
+        "op": "regex",
+        "pattern": "(?i)/var/run/docker\\.sock"
+      },
+      "expr_kind": "field",
+      "select": "service.volumes"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "volumes",
+    "metadata": {
+      "id": "CP021",
+      "name": "Sensitive host path is mounted",
+      "description": "Mounting host paths such as /proc, /sys, /etc, or / exposes sensitive host state and configuration to the container.",
+      "severity": "fail",
+      "mitigation": "Remove broad host path mounts and replace them with narrowly scoped data volumes or dedicated APIs.",
+      "reference": "Docker bind mount security guidance; host access minimization practices."
+    },
+    "expression": {
+      "expr": {
+        "op": "regex",
+        "pattern": "(?i)\"source\":\"(/proc|/sys|/etc|/)\""
+      },
+      "expr_kind": "field",
+      "select": "service.volumes"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP022",
+      "name": "Secret-like environment is used without compose secrets",
+      "description": "Services carrying secret-like environment data without Compose secrets use a weaker secret distribution model.",
+      "severity": "fail",
+      "mitigation": "Define the secret at the Compose top level and mount it through service.secrets instead of environment variables.",
+      "reference": "Docker Compose secrets documentation; secure secret handling guidance."
+    },
+    "expression": {
+      "expr": {
+        "args": [
+          {
+            "arg": {
+              "op": "regex",
+              "pattern": "(?i)(password|passwd|token|secret|api[_-]?key|private[_-]?key)"
+            },
+            "op": "field",
+            "select": "service.environment"
+          },
+          {
+            "arg": {
+              "arg": {
+                "op": "exists"
+              },
+              "op": "not"
+            },
+            "op": "field",
+            "select": "service.secrets"
+          }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP023",
+      "name": "Resource limits or reservations are missing",
+      "description": "Services without resource constraints can affect availability by exhausting shared host resources.",
+      "severity": "warn",
+      "mitigation": "Define resource limits and, where appropriate, reservations for CPU and memory.",
+      "reference": "Docker Compose deploy.resources guidance; container resource governance recommendations."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "exists"
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.resource_limits"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "ports",
+    "metadata": {
+      "id": "CP024",
+      "name": "Service publishes ports publicly",
+      "description": "Publicly bound service ports expand external attack surface and can expose internal services directly.",
+      "severity": "fail",
+      "mitigation": "Bind only to loopback or place the service on an internal network behind a dedicated ingress or reverse proxy.",
+      "reference": "Compose network hardening guidance; secure service exposure practices."
+    },
+    "expression": {
+      "expr": {
+        "args": [
+          {
+            "op": "exists"
+          },
+          {
+            "arg": {
+              "op": "regex",
+              "pattern": "(?i)127\\.0\\.0\\.1"
+            },
+            "op": "not"
+          }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "field",
+      "select": "service.ports"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP025",
+      "name": "Debug-like service is active without profiles",
+      "description": "Debug, admin, or developer-oriented services should not be active in normal deployments by default.",
+      "severity": "warn",
+      "mitigation": "Put debug-like services behind Compose profiles and activate them only when explicitly needed.",
+      "reference": "Docker Compose profiles documentation and environment separation practices."
+    },
+    "expression": {
+      "expr": {
+        "args": [
+          {
+            "arg": {
+              "op": "regex",
+              "pattern": "(?i)(debug|admin|dev|tools)"
+            },
+            "op": "field",
+            "select": "service.name"
+          },
+          {
+            "arg": {
+              "arg": {
+                "op": "exists"
+              },
+              "op": "not"
+            },
+            "op": "field",
+            "select": "service.profiles"
+          }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP026",
+      "name": "Service has build context but no image",
+      "description": "Deployment-oriented Compose definitions should identify the runtime image explicitly rather than relying only on local build context.",
+      "severity": "warn",
+      "mitigation": "Specify an explicit image reference for the service and use build only where that workflow is intentionally required.",
+      "reference": "Docker Compose build and image guidance for deployable service definitions."
+    },
+    "expression": {
+      "expr": {
+        "args": [
+          {
+            "arg": {
+              "op": "exists"
+            },
+            "op": "field",
+            "select": "service.build"
+          },
+          {
+            "arg": {
+              "arg": {
+                "op": "exists"
+              },
+              "op": "not"
+            },
+            "op": "field",
+            "select": "service.image"
+          }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "image",
+    "metadata": {
+      "id": "CP027",
+      "name": "Service image uses latest tag",
+      "description": "Mutable latest tags reduce deployment repeatability and complicate rollout review.",
+      "severity": "warn",
+      "mitigation": "Use explicit version tags and preferably immutable digests for deployed service images.",
+      "reference": "Docker image pinning guidance; reproducible deployment best practices."
+    },
+    "expression": {
+      "expr": {
+        "op": "regex",
+        "pattern": "(?i):latest$"
+      },
+      "expr_kind": "field",
+      "select": "service.image"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP028",
+      "name": "Service has no explicit network segmentation",
+      "description": "Relying only on the default network weakens intentional service segmentation and policy clarity.",
+      "severity": "warn",
+      "mitigation": "Attach services to explicit user-defined networks that reflect trust boundaries and communication intent.",
+      "reference": "Docker Compose networking guidance for service segmentation and isolation."
+    },
+    "expression": {
+      "expr": {
+        "args": [
+          {
+            "arg": {
+              "op": "regex",
+              "pattern": "^\\{\"default\":null\\}$"
+            },
+            "op": "field",
+            "select": "service.networks"
+          },
+          {
+            "arg": {
+              "arg": {
+                "op": "exists"
+              },
+              "op": "not"
+            },
+            "op": "field",
+            "select": "service.network_mode"
+          }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP029",
+      "name": "Logging policy is not configured",
+      "description": "Services without explicit logging settings may not align with retention, routing, or operational observability requirements.",
+      "severity": "warn",
+      "mitigation": "Define a logging driver and options appropriate for the deployment environment.",
+      "reference": "Docker logging driver documentation and operational observability guidance."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "exists"
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.logging"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP030",
+      "name": "Init process is not enabled",
+      "description": "Without an init process, long-running containers may not reap zombie processes or handle signals cleanly.",
+      "severity": "warn",
+      "mitigation": "Enable init for long-running services unless process handling is managed explicitly by the application.",
+      "reference": "Docker init process guidance for container process lifecycle handling."
+    },
+    "expression": {
+      "expr": {
+        "arg": {
+          "arg": {
+            "op": "eq",
+            "value": true
+          },
+          "op": "not"
+        },
+        "op": "field",
+        "select": "service.init"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  },
+  {
+    "target": "compose",
+    "phase": "post",
+    "subject": "service",
+    "metadata": {
+      "id": "CP031",
+      "name": "Stop controls are not configured",
+      "description": "Missing stop signal and grace period settings can lead to abrupt shutdown behavior and incomplete cleanup.",
+      "severity": "warn",
+      "mitigation": "Set stop_signal and or stop_grace_period to match the service shutdown behavior.",
+      "reference": "Docker Compose stop lifecycle configuration guidance for graceful termination."
+    },
+    "expression": {
+      "expr": {
+        "args": [
+          {
+            "arg": {
+              "arg": {
+                "op": "exists"
+              },
+              "op": "not"
+            },
+            "op": "field",
+            "select": "service.stop_grace_period"
+          },
+          {
+            "arg": {
+              "arg": {
+                "op": "exists"
+              },
+              "op": "not"
+            },
+            "op": "field",
+            "select": "service.stop_signal"
+          }
+        ],
+        "op": "all"
+      },
+      "expr_kind": "field",
+      "select": "service"
+    }
+  }
+]

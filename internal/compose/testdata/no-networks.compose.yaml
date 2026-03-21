@@ -1,0 +1,20 @@
+services:
+  app:
+    image: nginx:1.25
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    logging:
+      driver: json-file
+    init: true
+    stop_signal: SIGTERM
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "true"]
