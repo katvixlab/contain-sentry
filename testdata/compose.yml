@@ -1,0 +1,542 @@
+version: "3.9"
+
+services:
+  # ------------------------------------------------------------
+  # 1. Сервис без user
+  # Ожидается:
+  # - CP001: Service is missing user
+  # - CP004: read_only is not enabled
+  # - CP008: cap_drop does not include ALL
+  # - CP009: security_opt misses no-new-privileges
+  # - CP013: Missing healthcheck
+  # - CP015: Missing restart policy
+  # - CP023: отсутствуют resource limits (если правило реализовано)
+  # - CP028: нет явной сетевой сегментации (если правило реализовано)
+  # - CP029: отсутствует logging
+  # - CP030: init не включён
+  # - CP031: не настроены stop controls
+  # ------------------------------------------------------------
+  missing-user:
+    image: nginx:1.27
+
+  # ------------------------------------------------------------
+  # 2. Сервис запускается от root
+  # Ожидается:
+  # - CP002: Service runs as root
+  # ------------------------------------------------------------
+  root-user:
+    image: nginx:1.27
+    user: root
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 3. Privileged service
+  # Ожидается:
+  # - CP003: Privileged service enabled
+  # ------------------------------------------------------------
+  privileged-service:
+    image: alpine:3.20
+    user: "1001"
+    privileged: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 4. Нет read_only
+  # Ожидается:
+  # - CP004: read_only is not enabled
+  # ------------------------------------------------------------
+  not-read-only:
+    image: alpine:3.20
+    user: "1001"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 5. Host network
+  # Ожидается:
+  # - CP005: Service uses host network mode
+  # ------------------------------------------------------------
+  host-network:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    network_mode: host
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 6. Host PID namespace
+  # Ожидается:
+  # - CP006: Service shares host PID namespace
+  # ------------------------------------------------------------
+  host-pid:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    pid: host
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 7. Host IPC namespace
+  # Ожидается:
+  # - CP007: Service shares host IPC namespace
+  # ------------------------------------------------------------
+  host-ipc:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    ipc: host
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 8. Не сброшены capabilities
+  # Ожидается:
+  # - CP008: cap_drop does not include ALL
+  # ------------------------------------------------------------
+  missing-cap-drop-all:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 9. Нет no-new-privileges
+  # Ожидается:
+  # - CP009: security_opt misses no-new-privileges
+  # ------------------------------------------------------------
+  missing-no-new-privileges:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 10. Небезопасный security_opt
+  # Ожидается:
+  # - CP010: Insecure security_opt detected
+  # - обычно также CP009, т.к. нет no-new-privileges:true
+  # ------------------------------------------------------------
+  insecure-security-opt:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - seccomp:unconfined
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 11. Проброс host devices
+  # Ожидается:
+  # - CP011: Service maps host devices
+  # ------------------------------------------------------------
+  host-devices:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    devices:
+      - /dev/null:/dev/xnull
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 12. Секреты в environment
+  # Ожидается:
+  # - CP012: Secret-like data in environment
+  # - CP022: secret-like env без использования compose secrets
+  # ------------------------------------------------------------
+  secret-env:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      APP_PASSWORD: supersecret
+      API_TOKEN: token-value
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 13. Нет healthcheck
+  # Ожидается:
+  # - CP013: Missing healthcheck
+  # ------------------------------------------------------------
+  missing-healthcheck:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: always
+
+  # ------------------------------------------------------------
+  # 14. База данных как зависимость
+  # Специально сделан относительно "нормальным", чтобы
+  # depends_on у следующего сервиса проверялся корректно.
+  # ------------------------------------------------------------
+  db:
+    image: postgres:16
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 15. depends_on без service_healthy
+  # Ожидается:
+  # - CP014: depends_on lacks service_healthy condition
+  # ------------------------------------------------------------
+  depends-on-without-service-healthy:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 16. Нет restart policy
+  # Ожидается:
+  # - CP015: Missing restart policy
+  # ------------------------------------------------------------
+  missing-restart:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+
+  # ------------------------------------------------------------
+  # 17. Небезопасный restart policy
+  # Ожидается:
+  # - CP016: Unsafe restart policy
+  # ------------------------------------------------------------
+  unsafe-restart:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: "no"
+
+  # ------------------------------------------------------------
+  # 18. Небезопасный userns_mode
+  # Ожидается:
+  # - проверка на userns_mode (если правило реализовано)
+  # ------------------------------------------------------------
+  host-userns:
+    image: alpine:3.20
+    user: "1001"
+    userns_mode: host
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 19. Добавлены опасные capabilities
+  # Ожидается:
+  # - проверка на cap_add
+  # - особенно SYS_ADMIN / NET_ADMIN / SYS_PTRACE
+  # ------------------------------------------------------------
+  dangerous-cap-add:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 20. Опасный bind mount docker.sock
+  # Ожидается:
+  # - правило на docker.sock
+  # - возможно также общее правило на опасные host mounts
+  # ------------------------------------------------------------
+  docker-sock-mount:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 21. Опасные mounts /proc и /sys
+  # Ожидается:
+  # - правило на опасные host paths
+  # ------------------------------------------------------------
+  dangerous-host-mounts:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /proc:/host-proc:ro
+      - /sys:/host-sys:ro
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 22. Публичная публикация порта
+  # Ожидается:
+  # - правило на опасную внешнюю экспозицию ports
+  # ------------------------------------------------------------
+  public-ports:
+    image: nginx:1.27
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "8080:80"
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 23. Debug/admin сервис без profiles
+  # Ожидается:
+  # - правило на отсутствие profiles у debug/admin/dev-like сервиса
+  # ------------------------------------------------------------
+  debug-admin:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["sh", "-c", "sleep infinity"]
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 24. build без image
+  # Ожидается:
+  # - правило на build без image
+  # ------------------------------------------------------------
+  build-without-image:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 25. Нет явной сетевой сегментации
+  # Ожидается:
+  # - CP028 или аналогичное правило на отсутствие explicit networks
+  # ------------------------------------------------------------
+  no-explicit-networks:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+
+  # ------------------------------------------------------------
+  # 26. Нет logging policy
+  # Ожидается:
+  # - CP029: отсутствует logging
+  # ------------------------------------------------------------
+  missing-logging:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+    networks:
+      - internal_net
+
+  # ------------------------------------------------------------
+  # 27. Нет init
+  # Ожидается:
+  # - CP030: init не включён
+  # ------------------------------------------------------------
+  missing-init:
+    image: alpine:3.20
+    user: "1001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+    logging:
+      driver: json-file
+    networks:
+      - internal_net
+
+  # ------------------------------------------------------------
+  # 28. Нет stop controls
+  # Ожидается:
+  # - CP031: stop_signal / stop_grace_period не заданы
+  # ------------------------------------------------------------
+  missing-stop-controls:
+    image: alpine:3.20
+    user: "1001"
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+    logging:
+      driver: json-file
+    networks:
+      - internal_net
+
+  # ------------------------------------------------------------
+  # 29. Сервис "почти безопасный" для контроля
+  # Идея:
+  # - должен проходить большую часть правил
+  # - может не пройти только те, которые твой движок трактует строже
+  # ------------------------------------------------------------
+  secure-control:
+    image: alpine:3.20
+    user: "1001"
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "true"]
+    restart: always
+    logging:
+      driver: json-file
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    networks:
+      - internal_net
+    profiles:
+      - prod
+
+networks:
+  internal_net:
+    driver: bridge

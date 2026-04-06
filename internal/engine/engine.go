@@ -10,7 +10,11 @@ import (
 type Step struct {
 	Target   string
 	Subject  string
+	Path     string
+	Service  string
 	Raw      string
+	Value    any
+	Present  bool
 	Location any
 	Command  any
 }

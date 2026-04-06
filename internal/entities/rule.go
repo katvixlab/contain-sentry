@@ -59,26 +59,23 @@ const (
 )
 
 type Metadata struct {
-	ID            string   `json:"id,omitempty"`
-	Name          string   `json:"name,omitempty"`
-	Description   string   `json:"description,omitempty"`
-	Type          string   `json:"type,omitempty"`
-	Severity      string   `json:"severity,omitempty"`
-	Confidence    string   `json:"confidence,omitempty"`
-	CWEs          []string `json:"cwes,omitempty"`
-	CVEs          []string `json:"cves,omitempty"`
-	Mitigation    string   `json:"mitigation,omitempty"`
-	Reference     string   `json:"reference,omitempty"`
-	SafeExample   string   `json:"safe_example,omitempty"`
-	UnsafeExample string   `json:"unsafe_example,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Severity    string `json:"severity,omitempty"`
+	Mitigation  string `json:"mitigation,omitempty"`
+	Reference   string `json:"reference,omitempty"`
 }
 
 type Finding struct {
 	ID          string `json:"id,omitempty"`
 	Name        string `json:"name,omitempty"`
 	Severity    string `json:"severity,omitempty"`
-	CodeSample  string `json:"code_sample,omitempty"`
-	Confidence  string `json:"confidence,omitempty"`
 	Description string `json:"description,omitempty"`
+	Mitigation  string `json:"mitigation,omitempty"`
+	Reference   string `json:"reference,omitempty"`
+	CodeSample  string `json:"code_sample,omitempty"`
 	Location    any    `json:"location,omitempty"`
+	Target      string `json:"target,omitempty"`
+	Subject     string `json:"subject,omitempty"`
 }

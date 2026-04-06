@@ -196,7 +196,7 @@ func (r *DockerfileRunner) Eval(ctx context.Context, dom any, rule entities.Base
 		return nil
 	}
 
-	return []entities.Finding{buildFinding(rule, step)}
+	return []entities.Finding{engine.BuildFinding(rule, step)}
 }
 
 func (r *DockerfileRunner) evalDockerfileConstraint(rule entities.BaseRule, step engine.Step, dom any, expression *entities.ExpressionDockerfileConstraint) []entities.Finding {
@@ -213,22 +213,7 @@ func (r *DockerfileRunner) evalDockerfileConstraint(rule entities.BaseRule, step
 		return nil
 	}
 
-	return []entities.Finding{buildFinding(rule, step)}
-}
-
-func buildFinding(rule entities.BaseRule, step engine.Step) entities.Finding {
-	finding := entities.Finding{
-		CodeSample: step.Raw,
-		Location:   step.Location,
-	}
-	if rule.Metadata != nil {
-		finding.ID = rule.Metadata.ID
-		finding.Name = rule.Metadata.Name
-		finding.Severity = rule.Metadata.Severity
-		finding.Confidence = rule.Metadata.Confidence
-		finding.Description = rule.Metadata.Description
-	}
-	return finding
+	return []entities.Finding{engine.BuildFinding(rule, step)}
 }
 
 // matchesDockerfileConstraint evaluates aggregate constraints that depend on the
